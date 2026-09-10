@@ -160,6 +160,22 @@
   .fs-btn{position:fixed;right:14px;bottom:14px;z-index:20;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.1);
     border:1px solid rgba(255,255,255,.25);font-size:22px;opacity:.5;transition:opacity .2s}
   .fs-btn:hover{opacity:1}
+  .adm-btn{right:auto;left:14px;opacity:.25}
+
+  /* ---------- správa: modal s heslem ---------- */
+  .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(3,17,58,.85);backdrop-filter:blur(6px);padding:4vw}
+  .modal[hidden]{display:none}
+  .modal-box{background:#0b1a4a;border:1px solid rgba(255,255,255,.25);border-radius:22px;padding:clamp(20px,3vw,36px);max-width:520px;width:100%;text-align:center;
+    box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .modal-box h3{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:clamp(24px,3vw,36px)}
+  .modal-box p{margin-top:.6em;font-size:clamp(14px,1.6vw,18px);opacity:.85;line-height:1.4}
+  .modal-box input{margin-top:1.2em;width:100%;font-family:var(--font-body);font-size:clamp(18px,2vw,24px);padding:.6em 1em;border-radius:14px;
+    border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.3);color:#fff;outline:none;text-align:center;letter-spacing:.15em;-webkit-user-select:text;user-select:text}
+  .modal-box input:focus{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(55,230,255,.25)}
+  .modal-box .err{margin-top:.8em;color:#ff6b66;font-weight:600}
+  .modal-box .err[hidden]{display:none}
+  .modal-actions{display:flex;gap:12px;justify-content:center;margin-top:1.4em;flex-wrap:wrap}
+  .modal-actions .btn{margin-top:0;padding:.55em 1.4em;font-size:clamp(16px,2vw,24px)}
   .scroll{overflow-y:auto;justify-content:flex-start;padding-top:5vh;padding-bottom:5vh}
   @media (max-height:650px){
     .car{width:min(48vw,420px);margin-top:1vh}
@@ -297,6 +313,21 @@
 </section>
 
 <button class="fs-btn" id="fsBtn" title="Celá obrazovka">⛶</button>
+<button class="fs-btn adm-btn" id="admBtn" title="Správa žebříčku">⚙</button>
+
+<!-- ============ SPRÁVA: RESET ŽEBŘÍČKU (heslo) ============ -->
+<div class="modal" id="admModal" hidden>
+  <div class="modal-box">
+    <h3>Reset žebříčku</h3>
+    <p id="admInfo">Smaže všechny uložené výsledky na tomto zařízení. Zadejte heslo správce.</p>
+    <input type="password" id="admPass" placeholder="Heslo správce" autocomplete="off">
+    <div class="err" id="admErr" hidden>Nesprávné heslo.</div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="admCancel">Zrušit</button>
+      <button class="btn red" id="admConfirm">Smazat vše</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -307,6 +338,7 @@
   const IDLE_MS = 60000;           // po 60 s nečinnosti návrat na spořič
   const BOARD_KEY = 'f1-reaction-board-v1';
   const BOARD_SIZE = 10;
+  const RESET_PASSWORD = 'Digi2026'; // heslo správce pro smazání žebříčku
 
   // ---------- pomocné ----------
   const $ = s => document.querySelector(s);
@@ -366,6 +398,7 @@
     show('intro');
   });
   document.addEventListener('keydown',e=>{
+    if(modalOpen) return;
     if(current==='attract'&&(e.key===' '||e.key==='Enter')) show('intro');
   });
 
@@ -423,6 +456,7 @@
   }
   testEl.addEventListener('pointerdown',onHit);
   document.addEventListener('keydown',e=>{
+    if(modalOpen) return;
     if(current==='test'&&(e.key===' '||e.key==='Enter')&&!e.repeat){
       if(document.activeElement&&document.activeElement.tagName==='BUTTON') return;
       e.preventDefault(); onHit({target:document.body});
@@ -496,11 +530,37 @@
   $('#nameInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sign(); e.stopPropagation(); });
   $('#againBtn').addEventListener('click',goAttract);
 
-  // skrytý reset žebříčku: Ctrl+Shift+Delete na obrazovce výsledků
+  // ---------- správa: reset žebříčku chráněný heslem ----------
+  // otevře se tlačítkem ⚙ vlevo dole nebo zkratkou Ctrl+Shift+Delete
+  const admModal=$('#admModal'), admPass=$('#admPass'), admErr=$('#admErr'), admInfo=$('#admInfo');
+  let modalOpen=false;
+  function openAdmin(){
+    if(current==='test') abortTest();
+    const n=loadBoard().length;
+    admInfo.textContent = n ? `Na tomto zařízení je uloženo ${n} výsledků. Smazání je nevratné. Zadejte heslo správce.`
+                            : 'Žebříček je prázdný. Zadejte heslo správce pro potvrzení.';
+    admPass.value=''; admErr.hidden=true; admModal.hidden=false; modalOpen=true;
+    setTimeout(()=>admPass.focus(),50);
+  }
+  function closeAdmin(){ admModal.hidden=true; modalOpen=false; admPass.value=''; }
+  function confirmAdmin(){
+    if(admPass.value!==RESET_PASSWORD){ admErr.hidden=false; admPass.select(); return; }
+    saveBoard([]); myEntryId=null;
+    if(current==='results') renderBoard();
+    closeAdmin();
+    goAttract();
+  }
+  $('#admBtn').addEventListener('click',e=>{ e.stopPropagation(); openAdmin(); });
+  $('#admCancel').addEventListener('click',closeAdmin);
+  $('#admConfirm').addEventListener('click',confirmAdmin);
+  admModal.addEventListener('pointerdown',e=>{ e.stopPropagation(); if(e.target===admModal) closeAdmin(); });
+  admModal.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter') confirmAdmin();
+    if(e.key==='Escape') closeAdmin();
+  });
   document.addEventListener('keydown',e=>{
-    if(current==='results'&&e.ctrlKey&&e.shiftKey&&e.key==='Delete'){
-      if(confirm('Smazat celý žebříček?')){ saveBoard([]); myEntryId=null; renderBoard(); }
-    }
+    if(!modalOpen&&e.ctrlKey&&e.shiftKey&&e.key==='Delete'){ e.preventDefault(); openAdmin(); }
   });
 
   // ---------- celá obrazovka ----------
