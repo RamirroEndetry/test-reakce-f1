@@ -14,6 +14,7 @@ function createWindow() {
     autoHideMenuBar: true,
     backgroundColor: '#03113a',
     title: 'Test reakce – překonej pilota Formule 1',
+    icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
