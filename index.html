@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Test reakce – překonej pilota Formule 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-900:#03113a;
+    --blue-700:#0a2a7a;
+    --blue-500:#1650d8;
+    --blue-300:#4f8bff;
+    --cyan:#37e6ff;
+    --white:#ffffff;
+    --red:#e10600;
+    --green:#00d26a;
+    --gold:#ffcc33;
+    --font-display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+    --font-body:"Barlow","Segoe UI",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--blue-900);color:var(--white);font-family:var(--font-body);
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+  /* ---------- screens ---------- */
+  .screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4vh 6vw}
+  .screen.active{display:flex}
+
+  /* ---------- background art ---------- */
+  .bg{position:fixed;inset:0;overflow:hidden;z-index:0;
+    background:radial-gradient(120% 90% at 50% 110%, #1447c9 0%, #0a2a7a 40%, #03113a 100%)}
+  .bg .grid{position:absolute;inset:-10%;
+    background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+    background-size:80px 80px;transform:perspective(600px) rotateX(60deg) translateY(20%);opacity:.7;
+    animation:gridmove 6s linear infinite}
+  @keyframes gridmove{from{background-position:0 0}to{background-position:0 80px}}
+  .bg .streak{position:absolute;left:-30vw;height:2px;width:30vw;border-radius:2px;
+    background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.8;animation:streak linear infinite}
+  @keyframes streak{from{transform:translateX(0)}to{transform:translateX(160vw)}}
+  .bg .glow{position:absolute;left:50%;top:50%;width:80vmax;height:80vmax;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(79,139,255,.35) 0%,rgba(79,139,255,0) 60%);animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(.9);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
+  .bg .checker{position:absolute;left:0;right:0;height:40px;opacity:.55;
+    background:repeating-conic-gradient(#fff 0 25%,#000 0 50%) 0 0/40px 40px;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent);mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent)}
+  .bg .checker.top{top:0}.bg .checker.bottom{bottom:0}
+  .screen .content{position:relative;z-index:1;max-width:1100px;width:100%}
+
+  /* ---------- typography ---------- */
+  h1{font-family:var(--font-display);font-weight:900;text-transform:uppercase;line-height:.95;letter-spacing:.01em;
+    font-size:clamp(44px,9vw,132px);text-shadow:0 10px 40px rgba(0,0,0,.45)}
+  h1 .sub{display:block;font-size:.5em;font-weight:800;color:var(--cyan);letter-spacing:.06em;margin-top:.15em}
+  h2{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:clamp(32px,5vw,64px);letter-spacing:.03em}
+  p.lead{font-size:clamp(18px,2.3vw,30px);line-height:1.45;font-weight:500;max-width:900px;margin:0 auto}
+
+  /* ---------- F1 start lights ---------- */
+  .lights{display:flex;gap:clamp(8px,1.6vw,20px);justify-content:center;margin:0 auto 4vh;
+    padding:clamp(10px,1.6vw,18px) clamp(14px,2.4vw,28px);background:#0b0f1e;border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 0 0 2px #1c2440;width:max-content}
+  .lights .col{display:flex;flex-direction:column;gap:clamp(6px,1vw,12px)}
+  .lights .lamp{width:clamp(22px,4.2vw,56px);height:clamp(22px,4.2vw,56px);border-radius:50%;background:#1b1f2e;
+    box-shadow:inset 0 0 8px rgba(0,0,0,.8);transition:background .08s,box-shadow .08s}
+  .lights .lamp.on{background:var(--red);box-shadow:0 0 18px 4px rgba(225,6,0,.75),inset 0 0 8px rgba(255,255,255,.35)}
+  .lights .lamp.green{background:var(--green);box-shadow:0 0 18px 4px rgba(0,210,106,.75),inset 0 0 8px rgba(255,255,255,.35)}
+
+  /* ---------- attract screen ---------- */
+  #attract .cta{margin-top:5vh;font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.12em;
+    font-size:clamp(18px,2.6vw,34px);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+  #attract .cta .ring{display:inline-block;width:.9em;height:.9em;border:3px solid var(--cyan);border-radius:50%;vertical-align:-.1em;margin-right:.5em;
+    box-shadow:0 0 0 0 rgba(55,230,255,.7);animation:ring 1.6s ease-out infinite}
+  @keyframes ring{to{box-shadow:0 0 0 18px rgba(55,230,255,0)}}
+  .car{width:min(70vw,720px);height:auto;margin:2vh auto 0;display:block;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));animation:carfloat 3s ease-in-out infinite}
+  @keyframes carfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .badge{display:inline-flex;align-items:center;gap:.6em;padding:.45em 1.1em;border-radius:999px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.25);font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:clamp(14px,1.6vw,20px)}
+  .badge b{color:var(--gold)}
+
+  /* ---------- buttons ---------- */
+  .btn{display:inline-block;margin-top:5vh;padding:clamp(16px,2vw,24px) clamp(40px,6vw,80px);border-radius:999px;
+    font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:clamp(22px,3vw,38px);
+    background:linear-gradient(180deg,#5c9dff,#1650d8);color:#fff;box-shadow:0 12px 30px rgba(22,80,216,.5),inset 0 1px 0 rgba(255,255,255,.4);
+    transition:transform .12s,box-shadow .12s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(22,80,216,.6),inset 0 1px 0 rgba(255,255,255,.4)}
+  .btn:active{transform:translateY(1px) scale(.98)}
+  .btn.secondary{background:rgba(255,255,255,.12);box-shadow:none;border:2px solid rgba(255,255,255,.4)}
+  .btn.red{background:linear-gradient(180deg,#ff3b35,#b50500);box-shadow:0 12px 30px rgba(225,6,0,.45)}
+
+  /* ---------- instructions ---------- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,2vw,28px);margin:5vh auto 0;max-width:1000px}
+  .step{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:clamp(16px,2.4vw,30px);backdrop-filter:blur(6px)}
+  .step .n{font-family:var(--font-display);font-weight:900;font-size:clamp(40px,6vw,80px);line-height:1;color:var(--cyan)}
+  .step p{font-size:clamp(15px,1.7vw,22px);margin-top:.4em;line-height:1.35}
+  .step .swatch{display:inline-block;width:1em;height:1em;border-radius:4px;vertical-align:-.15em;margin-right:.3em}
+  @media (max-width:700px){.steps{grid-template-columns:1fr}}
+
+  /* ---------- test screen ---------- */
+  #test{background:var(--blue-700);transition:background .05s;z-index:5}
+  #test.wait{background:var(--red)}
+  #test.go{background:var(--green)}
+  #test.early{background:#4a0a0a}
+  #test .big{font-family:var(--font-display);font-weight:900;text-transform:uppercase;font-size:clamp(56px,14vw,220px);line-height:.9;
+    text-shadow:0 10px 40px rgba(0,0,0,.35)}
+  #test .round{position:absolute;top:3vh;left:0;right:0;font-family:var(--font-display);font-weight:700;text-transform:uppercase;
+    letter-spacing:.2em;font-size:clamp(16px,2.2vw,28px);opacity:.85}
+  #test .hint{font-size:clamp(18px,2.4vw,32px);margin-top:3vh;font-weight:500;opacity:.9}
+  #test .ms{font-family:var(--font-display);font-weight:900;font-size:clamp(90px,20vw,300px);line-height:1;
+    font-variant-numeric:tabular-nums}
+  #test .ms small{font-size:.3em;font-weight:700;letter-spacing:.05em;margin-left:.15em}
+  .dots{display:flex;gap:14px;justify-content:center;margin-top:3vh}
+  .dots span{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.3)}
+  .dots span.done{background:#fff}
+  .dots span.now{background:var(--cyan);box-shadow:0 0 0 4px rgba(55,230,255,.35)}
+
+  /* ---------- results ---------- */
+  .result-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:26px;padding:clamp(18px,3vw,36px);backdrop-filter:blur(8px)}
+  .result-grid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(10px,3vw,50px);margin-top:3vh}
+  .result-grid .vs{font-family:var(--font-display);font-weight:900;font-size:clamp(28px,4vw,56px);opacity:.5}
+  .stat .label{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:clamp(13px,1.5vw,20px);opacity:.8}
+  .stat .value{font-family:var(--font-display);font-weight:900;font-size:clamp(56px,9vw,140px);line-height:1;font-variant-numeric:tabular-nums}
+  .stat .value small{font-size:.32em;font-weight:700;margin-left:.1em}
+  .stat.you .value{color:var(--cyan)}
+  .stat.pilot .value{color:#ff4d47;text-shadow:0 0 30px rgba(225,6,0,.5)}
+  .stat .meta{font-size:clamp(13px,1.4vw,18px);opacity:.75;margin-top:.4em}
+  .verdict{margin-top:3vh;font-family:var(--font-display);font-weight:900;text-transform:uppercase;font-size:clamp(28px,4.6vw,64px);line-height:1.05}
+  .verdict.win{color:var(--gold);text-shadow:0 0 30px rgba(255,204,51,.55)}
+
+  .signup{margin-top:3vh;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .signup[hidden],.signed[hidden]{display:none}
+  .signup input{font-family:var(--font-body);font-size:clamp(18px,2.2vw,28px);padding:.6em 1em;border-radius:14px;border:2px solid rgba(255,255,255,.35);
+    background:rgba(0,0,0,.25);color:#fff;min-width:min(60vw,360px);outline:none;-webkit-user-select:text;user-select:text}
+  .signup input:focus{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(55,230,255,.25)}
+  .signup input::placeholder{color:rgba(255,255,255,.5)}
+  .signup .btn{margin-top:0;padding:.5em 1.4em;font-size:clamp(18px,2.2vw,28px)}
+  .signed{margin-top:2vh;font-size:clamp(16px,2vw,24px);color:var(--gold);font-weight:600}
+
+  .board{margin-top:3vh;text-align:left}
+  .board h3{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-size:clamp(18px,2.4vw,30px);
+    display:flex;align-items:center;gap:.5em;justify-content:center;margin-bottom:1.2vh}
+  .board ol{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;max-width:900px;margin:0 auto}
+  .board li{display:grid;grid-template-columns:2.2em 1fr auto;align-items:center;gap:10px;padding:.5em .9em;border-radius:12px;
+    background:rgba(255,255,255,.07);font-size:clamp(15px,1.8vw,22px);font-variant-numeric:tabular-nums}
+  .board li .rank{font-family:var(--font-display);font-weight:900;font-size:1.25em;opacity:.8}
+  .board li .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .board li .time{font-family:var(--font-display);font-weight:800;font-size:1.15em;color:var(--cyan)}
+  .board li.me{background:rgba(255,204,51,.18);outline:2px solid var(--gold)}
+  .board li:nth-child(2) .rank{color:var(--gold)}.board li:nth-child(3) .rank{color:#d9d9d9}.board li:nth-child(4) .rank{color:#d09150}
+  .board li.empty{display:block;grid-column:1/-1;opacity:.6;font-size:clamp(14px,1.6vw,20px);text-align:center;background:none}
+  .board li.pilot-row{grid-column:1/-1;background:rgba(225,6,0,.18);outline:2px solid rgba(225,6,0,.55)}
+  .board li.pilot-row .time{color:#ff6b66}
+  @media (max-width:700px){.board ol{grid-template-columns:1fr}.result-grid{grid-template-columns:1fr;gap:12px}.result-grid .vs{display:none}}
+
+  .actions{margin-top:3vh;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+  .actions .btn{margin-top:0}
+
+  /* ---------- utilities ---------- */
+  .fs-btn{position:fixed;right:14px;bottom:14px;z-index:20;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.25);font-size:22px;opacity:.5;transition:opacity .2s}
+  .fs-btn:hover{opacity:1}
+  .scroll{overflow-y:auto;justify-content:flex-start;padding-top:5vh;padding-bottom:5vh}
+  @media (max-height:650px){
+    .car{width:min(48vw,420px);margin-top:1vh}
+    #attract .cta{margin-top:2vh}
+    .lights{margin-bottom:2vh}
+    .lights .lamp{width:26px;height:26px}
+    .steps{margin-top:2.5vh}
+    .btn{margin-top:3vh}
+    h1{font-size:clamp(36px,7vw,90px)}
+  }
+  .fade-in{animation:fadein .5s ease both}
+  @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<div class="bg" id="bg">
+  <div class="glow"></div>
+  <div class="grid"></div>
+  <div class="checker top"></div>
+  <div class="checker bottom"></div>
+</div>
+
+<!-- ============ 1) SPOŘIČ / ÚVOD ============ -->
+<section class="screen active" id="attract">
+  <div class="content fade-in">
+    <div class="lights" id="attractLights">
+      <div class="col"><span class="lamp"></span><span class="lamp"></span></div>
+      <div class="col"><span class="lamp"></span><span class="lamp"></span></div>
+      <div class="col"><span class="lamp"></span><span class="lamp"></span></div>
+      <div class="col"><span class="lamp"></span><span class="lamp"></span></div>
+      <div class="col"><span class="lamp"></span><span class="lamp"></span></div>
+    </div>
+    <h1>Test reakce<span class="sub">Překonej pilota Formule 1</span></h1>
+
+    <svg class="car" viewBox="0 0 720 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="body" x1="0" x2="1"><stop offset="0" stop-color="#ff5a55"/><stop offset="1" stop-color="#b30500"/></linearGradient>
+        <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      </defs>
+      <g stroke="#37e6ff" stroke-width="3" stroke-linecap="round" opacity=".7">
+        <line x1="20" y1="90" x2="140" y2="90"><animate attributeName="x1" values="20;-60;20" dur="1.2s" repeatCount="indefinite"/></line>
+        <line x1="40" y1="120" x2="120" y2="120"><animate attributeName="x1" values="40;-40;40" dur=".9s" repeatCount="indefinite"/></line>
+        <line x1="10" y1="150" x2="150" y2="150"><animate attributeName="x1" values="10;-80;10" dur="1.5s" repeatCount="indefinite"/></line>
+      </g>
+      <ellipse cx="400" cy="178" rx="290" ry="10" fill="#000" opacity=".35"/>
+      <rect x="150" y="60" width="90" height="14" rx="4" fill="#111"/>
+      <rect x="160" y="74" width="18" height="50" fill="#222"/>
+      <rect x="145" y="52" width="100" height="10" rx="3" fill="url(#body)"/>
+      <path d="M180 130 L250 110 L320 92 Q380 84 440 92 L560 108 L640 130 L640 148 L180 148 Z" fill="url(#body)"/>
+      <path d="M250 110 L320 92 Q380 84 440 92 L560 108 L560 118 L250 118 Z" fill="url(#shine)"/>
+      <path d="M330 92 Q355 60 400 66 Q440 70 450 92 Z" fill="#c40400"/>
+      <path d="M355 96 Q385 64 425 96" fill="none" stroke="#111" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="390" cy="100" r="9" fill="#111"/>
+      <path d="M560 108 L690 122 L690 134 L560 138 Z" fill="url(#body)"/>
+      <rect x="600" y="140" width="110" height="10" rx="3" fill="#111"/>
+      <rect x="690" y="120" width="14" height="30" rx="2" fill="#222"/>
+      <g>
+        <circle cx="245" cy="148" r="30" fill="#0e0e0e"/>
+        <circle cx="245" cy="148" r="14" fill="#333"/>
+        <circle cx="245" cy="148" r="6" fill="#888"/>
+        <animateTransform attributeName="transform" type="rotate" from="0 245 148" to="-360 245 148" dur=".6s" repeatCount="indefinite"/>
+      </g>
+      <g>
+        <circle cx="580" cy="148" r="28" fill="#0e0e0e"/>
+        <circle cx="580" cy="148" r="13" fill="#333"/>
+        <circle cx="580" cy="148" r="6" fill="#888"/>
+        <animateTransform attributeName="transform" type="rotate" from="0 580 148" to="-360 580 148" dur=".6s" repeatCount="indefinite"/>
+      </g>
+      <text x="470" y="132" font-family="Barlow Condensed,Impact,sans-serif" font-weight="900" font-size="22" fill="#fff" opacity=".9">1</text>
+    </svg>
+
+    <div class="cta"><span class="ring"></span>Klepni kamkoli pro start</div>
+    <div style="margin-top:3vh"><span class="badge">Cíl: <b id="attractTarget">201 ms</b> · nejrychlejší start pilota F1</span></div>
+  </div>
+</section>
+
+<!-- ============ 2) INSTRUKCE ============ -->
+<section class="screen" id="intro">
+  <div class="content fade-in">
+    <h2>Jak to funguje</h2>
+    <p class="lead" style="margin-top:2vh">Po zahájení testu se obrazovka rozsvítí <b style="color:#ff6b66">červeně</b>.<br>
+      Jakmile se změní na <b style="color:#4dff9d">zelenou</b>, co nejrychleji klikněte.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><p><span class="swatch" style="background:var(--red)"></span>Červená = čekej. Neklikej předčasně, jinak se kolo opakuje.</p></div>
+      <div class="step"><div class="n">2</div><p><span class="swatch" style="background:var(--green)"></span>Zelená = KLIKNI! Měříme reakci v milisekundách.</p></div>
+      <div class="step"><div class="n">3</div><p>Test má <b>3 kola</b>, mezi nimi vždy stiskni <b>Pokračovat</b>. Počítá se průměr.</p></div>
+    </div>
+    <button class="btn" id="startBtn">Zahájit test</button>
+  </div>
+</section>
+
+<!-- ============ 3) TEST ============ -->
+<section class="screen" id="test">
+  <div class="round" id="roundLabel">Kolo 1 / 3</div>
+  <div class="content" id="testContent"></div>
+</section>
+
+<!-- ============ 4) VÝSLEDKY ============ -->
+<section class="screen scroll" id="results">
+  <div class="content fade-in">
+    <h2>Výsledek</h2>
+    <div class="result-card">
+      <div class="result-grid">
+        <div class="stat you">
+          <div class="label">Tvůj průměr</div>
+          <div class="value"><span id="resAvg">0</span><small>ms</small></div>
+          <div class="meta" id="resRounds"></div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="stat pilot">
+          <div class="label">Top čas pilota F1</div>
+          <div class="value"><span id="resPilot">201</span><small>ms</small></div>
+          <div class="meta">Valtteri Bottas · start VC Rakouska 2017</div>
+        </div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+
+    <div class="signup" id="signup">
+      <input type="text" id="nameInput" maxlength="24" placeholder="Tvoje jméno / podpis" autocomplete="off">
+      <button class="btn" id="signBtn">Zapsat do žebříčku</button>
+    </div>
+    <div class="signed" id="signed" hidden></div>
+
+    <div class="board">
+      <h3>🏆 Top hráči</h3>
+      <ol id="board"></ol>
+    </div>
+
+    <div class="actions">
+      <button class="btn red" id="againBtn">Hrát znovu</button>
+    </div>
+  </div>
+</section>
+
+<button class="fs-btn" id="fsBtn" title="Celá obrazovka">⛶</button>
+
+<script>
+(() => {
+  // ---------- konfigurace ----------
+  const PILOT_MS = 201;            // Valtteri Bottas, VC Rakouska 2017 – nejrychlejší regulérní start v F1
+  const ROUNDS = 3;
+  const MIN_DELAY = 1500, MAX_DELAY = 4500;   // náhodné čekání na červené (ms)
+  const IDLE_MS = 60000;           // po 60 s nečinnosti návrat na spořič
+  const BOARD_KEY = 'f1-reaction-board-v1';
+  const BOARD_SIZE = 10;
+
+  // ---------- pomocné ----------
+  const $ = s => document.querySelector(s);
+  const screens = ['attract','intro','test','results'].reduce((o,id)=>(o[id]=document.getElementById(id),o),{});
+  const bg = $('#bg');
+  let current = 'attract';
+  function show(id){
+    Object.values(screens).forEach(s=>s.classList.remove('active'));
+    screens[id].classList.add('active');
+    bg.style.display = (id==='test') ? 'none' : 'block';
+    current = id;
+    resetIdle();
+  }
+
+  // ---------- pozadí: světelné čáry ----------
+  for(let i=0;i<9;i++){
+    const s=document.createElement('div'); s.className='streak';
+    s.style.top=(5+Math.random()*90)+'vh';
+    s.style.animationDuration=(2+Math.random()*3)+'s';
+    s.style.animationDelay=(-Math.random()*5)+'s';
+    s.style.opacity=.25+Math.random()*.6;
+    bg.appendChild(s);
+  }
+
+  // ---------- spořič: animace semaforu ----------
+  const lamps=[...document.querySelectorAll('#attractLights .col')];
+  let lightStep=0;
+  setInterval(()=>{
+    if(current!=='attract') return;
+    lightStep=(lightStep+1)%9;
+    lamps.forEach((c,i)=>{
+      c.querySelectorAll('.lamp').forEach(l=>{
+        l.classList.remove('on','green');
+        if(lightStep>=1&&lightStep<=5&&i<lightStep) l.classList.add('on');
+        if(lightStep===7) l.classList.add('green');
+      });
+    });
+  },450);
+
+  // ---------- nečinnost ----------
+  let idleTimer;
+  function resetIdle(){
+    clearTimeout(idleTimer);
+    if(current==='attract') return;
+    idleTimer=setTimeout(()=>{ if(!(current==='test'&&(waiting||armed))) goAttract(); else resetIdle(); },IDLE_MS);
+  }
+  ['pointerdown','keydown','pointermove'].forEach(ev=>document.addEventListener(ev,()=>{ if(current!=='attract') resetIdle(); },{passive:true}));
+
+  function goAttract(){
+    abortTest();
+    show('attract');
+  }
+
+  // ---------- spořič -> instrukce ----------
+  screens.attract.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.fs-btn')) return;
+    show('intro');
+  });
+  document.addEventListener('keydown',e=>{
+    if(current==='attract'&&(e.key===' '||e.key==='Enter')) show('intro');
+  });
+
+  // ---------- test ----------
+  const testEl=screens.test, testContent=$('#testContent'), roundLabel=$('#roundLabel');
+  let times=[], armed=false, waiting=false, goAt=0, waitTimer=null, rafId=null;
+
+  function dotsHTML(){
+    return '<div class="dots">'+Array.from({length:ROUNDS},(_,i)=>
+      `<span class="${i<times.length?'done':(i===times.length?'now':'')}"></span>`).join('')+'</div>';
+  }
+
+  $('#startBtn').addEventListener('click',()=>{ times=[]; startRound(); });
+
+  function startRound(){
+    show('test');
+    roundLabel.textContent=`Kolo ${times.length+1} / ${ROUNDS}`;
+    testEl.className='screen active wait';
+    testContent.innerHTML=`<div class="big">Čekej…</div><div class="hint">Klikni, až se obrazovka rozsvítí zeleně</div>${dotsHTML()}`;
+    waiting=true; armed=false;
+    const delay=MIN_DELAY+Math.random()*(MAX_DELAY-MIN_DELAY);
+    waitTimer=setTimeout(goGreen,delay);
+  }
+
+  function goGreen(){
+    waiting=false;
+    testEl.className='screen active go';
+    testContent.innerHTML=`<div class="big">Klikni!</div>${dotsHTML()}`;
+    // měření běží okamžitě; po skutečném vykreslení zelené se start zpřesní,
+    // aby se nezapočítávalo zpoždění displeje
+    goAt=performance.now(); armed=true;
+    rafId=requestAnimationFrame(()=>{ rafId=requestAnimationFrame(()=>{ if(armed) goAt=Math.max(goAt,performance.now()); }); });
+  }
+
+  function abortTest(){
+    clearTimeout(waitTimer); cancelAnimationFrame(rafId);
+    waiting=false; armed=false;
+  }
+
+  function onHit(e){
+    if(current!=='test') return;
+    if(e.target&&e.target.closest&&e.target.closest('button')) return;
+    if(armed){
+      const t=Math.round(performance.now()-goAt);
+      armed=false;
+      times.push(t);
+      showRoundResult(t);
+    } else if(waiting){
+      abortTest();
+      testEl.className='screen active early';
+      testContent.innerHTML=`<div class="big">Předčasný start!</div><div class="hint">Kliknutí ještě na červenou. Kolo se opakuje.</div>
+        <button class="btn secondary" id="retryBtn">Zkusit znovu</button>`;
+      $('#retryBtn').addEventListener('click',startRound);
+    }
+  }
+  testEl.addEventListener('pointerdown',onHit);
+  document.addEventListener('keydown',e=>{
+    if(current==='test'&&(e.key===' '||e.key==='Enter')&&!e.repeat){
+      if(document.activeElement&&document.activeElement.tagName==='BUTTON') return;
+      e.preventDefault(); onHit({target:document.body});
+    }
+  });
+
+  function showRoundResult(t){
+    testEl.className='screen active';
+    const last=times.length>=ROUNDS;
+    const comment = t<=PILOT_MS ? '🔥 Rychleji než pilot F1!' : (t<250 ? 'Skvělé! Skoro jako pilot.' : (t<320 ? 'Dobrá reakce.' : 'Zkus se víc soustředit.'));
+    testContent.innerHTML=`<div class="hint" style="margin:0 0 1vh;opacity:.8;letter-spacing:.15em;text-transform:uppercase;font-family:var(--font-display);font-weight:700">Tvoje reakce</div>
+      <div class="ms">${t}<small>ms</small></div>
+      <div class="hint">${comment}</div>
+      ${dotsHTML()}
+      <button class="btn" id="nextBtn">${last?'Vyhodnotit':'Pokračovat'}</button>`;
+    $('#nextBtn').addEventListener('click',()=> last?showResults():startRound());
+    setTimeout(()=>$('#nextBtn').focus(),50);
+  }
+
+  // ---------- výsledky ----------
+  let myEntryId=null;
+  const avgOf = arr => Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+
+  function showResults(){
+    const avg=avgOf(times);
+    const best=Math.min(...times);
+    $('#resAvg').textContent=avg;
+    $('#resPilot').textContent=PILOT_MS;
+    $('#resRounds').textContent=`Kola: ${times.join(' · ')} ms · nejlepší ${best} ms`;
+    const v=$('#verdict');
+    if(avg<=PILOT_MS){ v.className='verdict win'; v.textContent=`🏆 Pilot F1 překonán o ${PILOT_MS-avg} ms!`; }
+    else { v.className='verdict'; v.textContent=`Pilot F1 byl rychlejší o ${avg-PILOT_MS} ms`; }
+    myEntryId=null;
+    $('#signup').hidden=false; $('#signed').hidden=true; $('#nameInput').value='';
+    renderBoard();
+    show('results');
+    screens.results.scrollTop=0;
+    setTimeout(()=>$('#nameInput').focus(),300);
+  }
+
+  // žebříček: localStorage (přežije obnovení stránky), záložně paměť
+  let memBoard=[];
+  function loadBoard(){ try{ const b=JSON.parse(localStorage.getItem(BOARD_KEY)); if(Array.isArray(b)) memBoard=b; }catch(e){} return memBoard.slice(); }
+  function saveBoard(b){ memBoard=b.slice(); try{ localStorage.setItem(BOARD_KEY,JSON.stringify(b)); }catch(e){} }
+
+  function renderBoard(){
+    const board=loadBoard().sort((a,b)=>a.ms-b.ms).slice(0,BOARD_SIZE);
+    let html=`<li class="pilot-row"><span class="rank">🏁</span><span class="name">Pilot F1 – Valtteri Bottas</span><span class="time">${PILOT_MS} ms</span></li>`;
+    if(!board.length) html+=`<li class="empty">Zatím nikdo. Buď první!</li>`;
+    board.forEach((e,i)=>{
+      html+=`<li class="${e.id===myEntryId?'me':''}"><span class="rank">${i+1}.</span><span class="name">${esc(e.name)}</span><span class="time">${e.ms} ms</span></li>`;
+    });
+    $('#board').innerHTML=html;
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function sign(){
+    const name=$('#nameInput').value.trim();
+    if(!name){ $('#nameInput').focus(); return; }
+    const avg=avgOf(times);
+    const entry={id:Date.now()+Math.random().toString(16).slice(2),name,ms:avg,date:new Date().toISOString()};
+    const board=loadBoard(); board.push(entry); saveBoard(board);
+    myEntryId=entry.id;
+    const rank=board.sort((a,b)=>a.ms-b.ms).findIndex(e=>e.id===entry.id)+1;
+    $('#signup').hidden=true;
+    const s=$('#signed'); s.hidden=false;
+    s.textContent = rank<=BOARD_SIZE ? `✍️ Zapsáno! ${name} – ${avg} ms, ${rank}. místo.` : `✍️ Zapsáno! ${name} – ${avg} ms (mimo Top ${BOARD_SIZE}).`;
+    renderBoard();
+  }
+  $('#signBtn').addEventListener('click',sign);
+  $('#nameInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sign(); e.stopPropagation(); });
+  $('#againBtn').addEventListener('click',goAttract);
+
+  // skrytý reset žebříčku: Ctrl+Shift+Delete na obrazovce výsledků
+  document.addEventListener('keydown',e=>{
+    if(current==='results'&&e.ctrlKey&&e.shiftKey&&e.key==='Delete'){
+      if(confirm('Smazat celý žebříček?')){ saveBoard([]); myEntryId=null; renderBoard(); }
+    }
+  });
+
+  // ---------- celá obrazovka ----------
+  $('#fsBtn').addEventListener('click',e=>{
+    e.stopPropagation();
+    if(!document.fullscreenElement){ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }
+    else if(document.exitFullscreen) document.exitFullscreen();
+  });
+  $('#attractTarget').textContent=PILOT_MS+' ms';
+})();
+</script>
+</body>
+</html>
