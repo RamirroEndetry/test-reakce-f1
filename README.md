@@ -3,6 +3,14 @@
 Aplikace pro měření reakční doby ve třech kolech. Cílový čas: 201 ms
 (Valtteri Bottas, start VC Rakouska 2017).
 
+## Pravidla proti podvádění
+
+- **Předčasné starty**: kliknutí na červenou opakuje kolo, ale za celý test jsou povoleny
+  jen 2 omyly – třetí test ukončí bez výsledku (konstanta `MAX_EARLY`).
+- **Tipnutý klik**: reakce pod 100 ms se počítá jako předčasný start (`MIN_REACTION_MS`).
+- **Tlačítka testu** (Pokračovat, Zkusit znovu) jsou u spodního okraje mimo střed obrazovky
+  a po zobrazení jsou 0,7 s neaktivní (`BTN_LOCK_MS`), aby je neodklikly rychlé kliky za sebou.
+
 ## Spuštění
 
 - **Web**: otevřete `index.html` v prohlížeči (Chrome/Edge), nebo použijte GitHub Pages.

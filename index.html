@@ -84,7 +84,8 @@
   .btn{display:inline-block;margin-top:5vh;padding:clamp(16px,2vw,24px) clamp(40px,6vw,80px);border-radius:999px;
     font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:clamp(22px,3vw,38px);
     background:linear-gradient(180deg,#5c9dff,#1650d8);color:#fff;box-shadow:0 12px 30px rgba(22,80,216,.5),inset 0 1px 0 rgba(255,255,255,.4);
-    transition:transform .12s,box-shadow .12s}
+    transition:transform .12s,box-shadow .12s,opacity .25s}
+  .btn:disabled{opacity:.3;cursor:default;pointer-events:none}
   .btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(22,80,216,.6),inset 0 1px 0 rgba(255,255,255,.4)}
   .btn:active{transform:translateY(1px) scale(.98)}
   .btn.secondary{background:rgba(255,255,255,.12);box-shadow:none;border:2px solid rgba(255,255,255,.4)}
@@ -108,6 +109,11 @@
   #test .round{position:absolute;top:3vh;left:0;right:0;font-family:var(--font-display);font-weight:700;text-transform:uppercase;
     letter-spacing:.2em;font-size:clamp(16px,2.2vw,28px);opacity:.85}
   #test .hint{font-size:clamp(18px,2.4vw,32px);margin-top:3vh;font-weight:500;opacity:.9}
+  #test .hint.warn{color:var(--gold);font-weight:600;opacity:1;margin-top:1.5vh}
+  /* tlačítka testu (Pokračovat, Zkusit znovu…) jsou u spodního okraje, mimo střed, kam se kliká při měření */
+  #test .test-actions{position:absolute;left:0;right:0;bottom:6vh;z-index:2}
+  #test .test-actions .btn{margin-top:0}
+  #test:has(.test-actions .btn){padding-bottom:calc(6vh + 100px)}
   #test .ms{font-family:var(--font-display);font-weight:900;font-size:clamp(90px,20vw,300px);line-height:1;
     font-variant-numeric:tabular-nums}
   #test .ms small{font-size:.3em;font-weight:700;letter-spacing:.05em;margin-left:.15em}
@@ -187,6 +193,8 @@
     .steps{margin-top:2.5vh}
     .btn{margin-top:3vh}
     h1{font-size:clamp(36px,7vw,90px)}
+    #test .ms{font-size:clamp(64px,26vh,160px)}
+    #test .big{font-size:clamp(40px,18vh,120px)}
   }
   .fade-in{animation:fadein .5s ease both}
   @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -262,7 +270,7 @@
     <p class="lead" style="margin-top:2vh">Po zahájení testu se obrazovka rozsvítí <b style="color:#ff6b66">červeně</b>.<br>
       Jakmile se změní na <b style="color:#4dff9d">zelenou</b>, co nejrychleji klikněte.</p>
     <div class="steps">
-      <div class="step"><div class="n">1</div><p><span class="swatch" style="background:var(--red)"></span>Červená = čekej. Neklikej předčasně, jinak se kolo opakuje.</p></div>
+      <div class="step"><div class="n">1</div><p><span class="swatch" style="background:var(--red)"></span>Červená = čekej. Předčasné kliknutí opakuje kolo – máš jen <b>2 omyly</b>, třetí test ukončí.</p></div>
       <div class="step"><div class="n">2</div><p><span class="swatch" style="background:var(--green)"></span>Zelená = KLIKNI! Měříme reakci v milisekundách.</p></div>
       <div class="step"><div class="n">3</div><p>Test má <b>3 kola</b>, mezi nimi vždy stiskni <b>Pokračovat</b>. Počítá se průměr.</p></div>
     </div>
@@ -274,6 +282,7 @@
 <section class="screen" id="test">
   <div class="round" id="roundLabel">Kolo 1 / 3</div>
   <div class="content" id="testContent"></div>
+  <div class="test-actions" id="testActions"></div>
 </section>
 
 <!-- ============ 4) VÝSLEDKY ============ -->
@@ -337,6 +346,9 @@
   const PILOT_MS = 201;            // Valtteri Bottas, VC Rakouska 2017 – nejrychlejší regulérní start v F1
   const ROUNDS = 3;
   const MIN_DELAY = 1500, MAX_DELAY = 4500;   // náhodné čekání na červené (ms)
+  const MAX_EARLY = 2;             // povolené předčasné starty za celý test, další test ukončí (při změně uprav i text v instrukcích)
+  const MIN_REACTION_MS = 100;     // rychleji člověk reagovat neumí = tipnutý klik, počítá se jako předčasný start
+  const BTN_LOCK_MS = 700;         // tlačítko testu je po zobrazení chvíli neaktivní, aby ho neodklikl rozjetý prst
   const IDLE_MS = 60000;           // po 60 s nečinnosti návrat na spořič
   const BOARD_KEY = 'f1-reaction-board-v1';
   const BOARD_SIZE = 10;
@@ -405,18 +417,28 @@
   });
 
   // ---------- test ----------
-  const testEl=screens.test, testContent=$('#testContent'), roundLabel=$('#roundLabel');
-  let times=[], armed=false, waiting=false, goAt=0, waitTimer=null, rafId=null;
+  const testEl=screens.test, testContent=$('#testContent'), testActions=$('#testActions'), roundLabel=$('#roundLabel');
+  let times=[], earlyCount=0, armed=false, waiting=false, goAt=0, waitTimer=null, rafId=null, lockTimer=null;
 
   function dotsHTML(){
     return '<div class="dots">'+Array.from({length:ROUNDS},(_,i)=>
       `<span class="${i<times.length?'done':(i===times.length?'now':'')}"></span>`).join('')+'</div>';
   }
 
-  $('#startBtn').addEventListener('click',()=>{ times=[]; startRound(); });
+  // tlačítko u spodního okraje; odemkne se až po chvíli, aby ho neodklikly rychlé kliky za sebou
+  function showAction(label,cls,onClick){
+    testActions.innerHTML=`<button class="btn ${cls}" disabled>${label}</button>`;
+    const btn=testActions.firstChild;
+    btn.addEventListener('click',onClick);
+    clearTimeout(lockTimer);
+    lockTimer=setTimeout(()=>{ btn.disabled=false; if(!modalOpen) btn.focus(); },BTN_LOCK_MS);
+  }
+
+  $('#startBtn').addEventListener('click',()=>{ times=[]; earlyCount=0; startRound(); });
 
   function startRound(){
     show('test');
+    testActions.innerHTML='';
     roundLabel.textContent=`Kolo ${times.length+1} / ${ROUNDS}`;
     testEl.className='screen active wait';
     testContent.innerHTML=`<div class="big">Čekej…</div><div class="hint">Klikni, až se obrazovka rozsvítí zeleně</div>${dotsHTML()}`;
@@ -446,15 +468,29 @@
     if(armed){
       const t=Math.round(performance.now()-goAt);
       armed=false;
+      if(t<MIN_REACTION_MS){ falseStart('Tak rychle nereaguje ani pilot F1 – klik byl tipnutý.'); return; }
       times.push(t);
       showRoundResult(t);
     } else if(waiting){
       abortTest();
-      testEl.className='screen active early';
-      testContent.innerHTML=`<div class="big">Předčasný start!</div><div class="hint">Kliknutí ještě na červenou. Kolo se opakuje.</div>
-        <button class="btn secondary" id="retryBtn">Zkusit znovu</button>`;
-      $('#retryBtn').addEventListener('click',startRound);
+      falseStart('Kliknutí ještě na červenou.');
     }
+  }
+
+  // předčasný start: kolo se opakuje, ale jen MAX_EARLY× za test – pak test končí bez výsledku
+  function falseStart(why){
+    earlyCount++;
+    testEl.className='screen active early';
+    if(earlyCount>MAX_EARLY){
+      testContent.innerHTML=`<div class="big">Test ukončen</div>
+        <div class="hint">Příliš mnoho předčasných startů. Příště počkej na zelenou.</div>`;
+      showAction('Zpět na začátek','secondary',goAttract);
+      return;
+    }
+    const warn = earlyCount<MAX_EARLY ? 'při překročení limitu test končí.' : 'další předčasný start test ukončí!';
+    testContent.innerHTML=`<div class="big">Předčasný start!</div><div class="hint">${why} Kolo se opakuje.</div>
+      <div class="hint warn">Omyl ${earlyCount} / ${MAX_EARLY} – ${warn}</div>`;
+    showAction('Zkusit znovu','secondary',startRound);
   }
   testEl.addEventListener('pointerdown',onHit);
   document.addEventListener('keydown',e=>{
@@ -472,10 +508,8 @@
     testContent.innerHTML=`<div class="hint" style="margin:0 0 1vh;opacity:.8;letter-spacing:.15em;text-transform:uppercase;font-family:var(--font-display);font-weight:700">Tvoje reakce</div>
       <div class="ms">${t}<small>ms</small></div>
       <div class="hint">${comment}</div>
-      ${dotsHTML()}
-      <button class="btn" id="nextBtn">${last?'Vyhodnotit':'Pokračovat'}</button>`;
-    $('#nextBtn').addEventListener('click',()=> last?showResults():startRound());
-    setTimeout(()=>$('#nextBtn').focus(),50);
+      ${dotsHTML()}`;
+    showAction(last?'Vyhodnotit':'Pokračovat','',()=> last?showResults():startRound());
   }
 
   // ---------- výsledky ----------
