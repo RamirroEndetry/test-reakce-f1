@@ -11,6 +11,13 @@ Aplikace pro měření reakční doby ve třech kolech. Cílový čas: 201 ms
 - **Tlačítka testu** (Pokračovat, Zkusit znovu) jsou u spodního okraje mimo střed obrazovky
   a po zobrazení jsou 0,7 s neaktivní (`BTN_LOCK_MS`), aby je neodklikly rychlé kliky za sebou.
 
+## Obrazovka výsledků
+
+Výsledky se vejdou na jednu obrazovku bez posouvání. Žebříček Top 10 je okno, které ukáže
+tolik řádků, kolik se vejde, a zbytek samo projíždí od 1. místa dolů (krok `BOARD_STEP_MS`,
+pauza na začátku a konci `BOARD_HOLD_MS`). Po zápisu jména najede na řádek hráče.
+Tlačítko **Hrát znovu** je pod žebříčkem vždy vidět.
+
 ## Spuštění
 
 - **Web**: otevřete `index.html` v prohlížeči (Chrome/Edge), nebo použijte GitHub Pages.
