@@ -286,7 +286,7 @@
       <div class="step"><div class="n">2</div><p><span class="swatch" style="background:var(--green)"></span>Zelená = KLIKNI! Měříme reakci v milisekundách.</p></div>
       <div class="step"><div class="n">3</div><p>Test má <b>3 kola</b>, mezi nimi vždy stiskni <b>Pokračovat</b>. Počítá se průměr.</p></div>
     </div>
-    <button class="btn" id="startBtn">Zahájit test</button>
+    <button class="btn" id="startBtn" disabled>Rozumím</button>
   </div>
 </section>
 
@@ -360,7 +360,7 @@
   const MIN_DELAY = 1500, MAX_DELAY = 4500;   // náhodné čekání na červené (ms)
   const MAX_EARLY = 2;             // povolené předčasné starty za celý test, další test ukončí (při změně uprav i text v instrukcích)
   const MIN_REACTION_MS = 100;     // rychleji člověk reagovat neumí = tipnutý klik, počítá se jako předčasný start
-  const BTN_LOCK_MS = 700;         // tlačítko testu je po zobrazení chvíli neaktivní, aby ho neodklikl rozjetý prst
+  const BTN_LOCK_MS = 700;         // tlačítka (Rozumím, Pokračovat…) jsou po zobrazení chvíli neaktivní, aby je neodklikl rozjetý prst
   const IDLE_MS = 60000;           // po 60 s nečinnosti návrat na spořič
   const BOARD_KEY = 'f1-reaction-board-v1';
   const BOARD_SIZE = 10;
@@ -422,13 +422,23 @@
   }
 
   // ---------- spořič -> instrukce ----------
+  // tlačítko Rozumím je po zobrazení návodu chvíli zamčené (stejně jako Pokračovat mezi koly),
+  // aby se návod nepřeskočil rozjetým dotykem z úvodní obrazovky
+  const startBtn=$('#startBtn');
+  let introTimer=null;
+  function goIntro(){
+    show('intro');
+    clearTimeout(introTimer);
+    startBtn.disabled=true;
+    introTimer=setTimeout(()=>{ startBtn.disabled=false; },BTN_LOCK_MS);
+  }
   screens.attract.addEventListener('pointerdown',e=>{
     if(e.target.closest('.fs-btn')) return;
-    show('intro');
+    goIntro();
   });
   document.addEventListener('keydown',e=>{
     if(modalOpen) return;
-    if(current==='attract'&&(e.key===' '||e.key==='Enter')) show('intro');
+    if(current==='attract'&&(e.key===' '||e.key==='Enter')) goIntro();
   });
 
   // ---------- test ----------
@@ -449,7 +459,7 @@
     lockTimer=setTimeout(()=>{ btn.disabled=false; if(!modalOpen) btn.focus(); },BTN_LOCK_MS);
   }
 
-  $('#startBtn').addEventListener('click',()=>{ times=[]; earlyCount=0; startRound(); });
+  startBtn.addEventListener('click',()=>{ times=[]; earlyCount=0; startRound(); });
 
   function startRound(){
     show('test');

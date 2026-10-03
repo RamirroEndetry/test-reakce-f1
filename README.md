@@ -10,6 +10,8 @@ Aplikace pro měření reakční doby ve třech kolech. Cílový čas: 201 ms
 - **Tipnutý klik**: reakce pod 100 ms se počítá jako předčasný start (`MIN_REACTION_MS`).
 - **Tlačítka testu** (Pokračovat, Zkusit znovu) jsou u spodního okraje mimo střed obrazovky
   a po zobrazení jsou 0,7 s neaktivní (`BTN_LOCK_MS`), aby je neodklikly rychlé kliky za sebou.
+- **Návod**: tlačítko **Rozumím** pod návodem je po zobrazení stejně dlouho neaktivní,
+  takže se návod nedá omylem přeskočit rozjetým dotykem z úvodní obrazovky.
 
 ## Obrazovka výsledků
 
