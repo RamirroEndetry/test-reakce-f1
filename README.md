@@ -1,24 +1,42 @@
 # Test reakce – překonej pilota Formule 1
 
-Aplikace pro měření reakční doby ve třech kolech. Cílový čas: 201 ms
+Aplikace Brembo pro měření reakční doby. Cílový čas: 201 ms
 (Valtteri Bottas, start VC Rakouska 2017).
+
+## Průběh hry
+
+1. **Spořič** – smyčka videí, klepnutím se spustí návod.
+2. **Jeden pokus** o 3 kolech (`ROUNDS`). Výsledek je průměr všech tří kol.
+3. **Výherní stránka** – zobrazí se hned po třetím klepnutí: výsledný čas
+   a srovnání s pilotem.
+4. **Zápis do žebříčku** – jméno, telefon, nepovinný e-mail a poznámka obsluhy (co je to
+   za klienta). Píše se na klávesnici přímo v aplikaci (písmena bez diakritiky a čísla,
+   u telefonu jen čísla). **Telefon je lístek do losování**: je povinný (`PHONE_REQUIRED`)
+   a každé číslo se dá zapsat jen jednou – `777 123 456` a `+420 777 123 456` je totéž číslo.
+
+## Žebříček a kontakty
+
+- **Žebříček** se vysouvá z boku tlačítkem 🏆 vlevo dole (na spořiči, v návodu i na výherní
+  stránce). Telefony, e-maily ani poznámky v něm vidět nejsou. Po 30 s bez dotyku se sám zavře.
+- **Správa** (⚙ vpravo nahoře nebo Ctrl+Shift+Delete, heslo správce): seznam hráčů s telefony
+  a e-maily, ke každému lze kdykoli dopsat poznámku, **Export PDF**, **Export CSV** (pro Excel)
+  a **Smazat vše**. Export PDF se zeptá, kam soubor uložit (výchozí je plocha), a uložené PDF
+  rovnou otevře v okně nad aplikací; ve webové verzi otevře tisk (cíl „Uložit jako PDF“).
+
+## Losování hlavního výherce
+
+Ve správě je tlačítko **🎉 Losování**. Losuje se náhodně ze všech zapsaných telefonních čísel,
+každé má jeden lístek. Vylosovaný se uloží, je zvýrazněný v seznamu, v PDF i v CSV.
+**Losovat znovu** (potvrzuje se druhým klepnutím) vybere nového výherce ze zbylých – kdo už
+byl jednou vylosován, do dalšího losování nejde. **Smazat vše** maže i výsledek losování.
 
 ## Pravidla proti podvádění
 
-- **Předčasné starty**: kliknutí na červenou opakuje kolo, ale za celý test jsou povoleny
-  jen 2 omyly – třetí test ukončí bez výsledku (konstanta `MAX_EARLY`).
+- **Předčasné starty**: klepnutí na červenou opakuje kolo, povoleny jsou
+  jen 2 omyly (`MAX_EARLY`). Třetí pokus ukončí bez výsledku.
 - **Tipnutý klik**: reakce pod 100 ms se počítá jako předčasný start (`MIN_REACTION_MS`).
-- **Tlačítka testu** (Pokračovat, Zkusit znovu) jsou u spodního okraje mimo střed obrazovky
-  a po zobrazení jsou 0,7 s neaktivní (`BTN_LOCK_MS`), aby je neodklikly rychlé kliky za sebou.
-- **Návod**: tlačítko **Rozumím** pod návodem je po zobrazení stejně dlouho neaktivní,
-  takže se návod nedá omylem přeskočit rozjetým dotykem z úvodní obrazovky.
-
-## Obrazovka výsledků
-
-Výsledky se vejdou na jednu obrazovku bez posouvání. Žebříček Top 10 je okno, které ukáže
-tolik řádků, kolik se vejde, a zbytek samo projíždí od 1. místa dolů (krok `BOARD_STEP_MS`,
-pauza na začátku a konci `BOARD_HOLD_MS`). Po zápisu jména najede na řádek hráče.
-Tlačítko **Hrát znovu** je pod žebříčkem vždy vidět.
+- **Tlačítka** (Rozumím, Pokračovat, tlačítka na výherní stránce) jsou po zobrazení 0,7 s
+  neaktivní (`BTN_LOCK_MS`), aby je neodklikl rozjetý prst.
 
 ## Spuštění
 
@@ -31,11 +49,12 @@ Tlačítko **Hrát znovu** je pod žebříčkem vždy vidět.
 | Akce | Jak |
 | --- | --- |
 | Celá obrazovka (web) | tlačítko ⛶ vpravo dole nebo F11 |
-| Reset žebříčku | nenápadné tlačítko ⚙ vpravo nahoře nebo Ctrl+Shift+Delete, zadat heslo správce |
+| Žebříček | tlačítko 🏆 vlevo dole |
+| Kontakty, poznámky, export, reset | nenápadné tlačítko ⚙ vpravo nahoře nebo Ctrl+Shift+Delete, zadat heslo správce |
 | Ukončení Electron aplikace | Ctrl+Q |
 | Přepnutí kiosk / okno (Electron) | F11 |
 
-Heslo správce je uloženo v `index.html` v konstantě `RESET_PASSWORD`.
+Heslo správce je v souboru `config.local.js` (`adminPassword`).
 
 Žebříček se ukládá na daném zařízení, každé zařízení má vlastní. Výsledky zůstávají
 i po vypnutí, restartu nebo výpadku proudu – smazat je jde jen resetem s heslem.
@@ -44,6 +63,14 @@ i po vypnutí, restartu nebo výpadku proudu – smazat je jde jen resetem s hes
   s `fsync`, vedle je záloha `zebricek.json.bak`).
 - **Web**: localStorage prohlížeče (nemazat data prohlížeče / nepoužívat anonymní okno).
 Po 60 s nečinnosti se aplikace vrátí na úvodní spořič.
+
+## Spořič (video)
+
+Na úvodní obrazovce běží smyčka pěti záběrů `assets/video/f1-1.mp4` až `f1-5.mp4`
+(1920×1080, bez zvuku, každý 5 s). Texty, startovní semafor, výzva ke hře a logo
+`assets/Brembo_logo.png` se vykreslují přes video v aplikaci – každý klip má vlastní
+scénu (`.scene` v `index.html`, ve stejném pořadí jako klipy). Záběr vyměníte přepsáním
+souboru se stejným názvem. Když videa chybí, spořič běží s texty na běžném pozadí.
 
 ## Sestavení Electron balíčků
 

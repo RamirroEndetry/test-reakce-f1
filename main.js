@@ -1,5 +1,5 @@
 // Electron obal pro Test reakce – kiosk režim (celá obrazovka, bez menu)
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -37,6 +37,41 @@ ipcMain.on('board:save', (event, board) => {
   }
 });
 
+// ---------- export kontaktů do PDF ----------
+// Stránka pošle hotovou HTML tabulku; ta se ve skrytém okně vytiskne do PDF (A4 na šířku),
+// obsluha zvolí, kam soubor uložit, a PDF se rovnou otevře v okně nad aplikací.
+ipcMain.handle('contacts:pdf', async (event, html) => {
+  const parent = BrowserWindow.fromWebContents(event.sender);
+  const tmp = path.join(app.getPath('temp'), `brembo-f1-kontakty-${Date.now()}.html`);
+  const work = new BrowserWindow({ show: false, webPreferences: { javascript: false } });
+  try {
+    fs.writeFileSync(tmp, String(html), 'utf8');
+    await work.loadFile(tmp);
+    const pdf = await work.webContents.printToPDF({ pageSize: 'A4', landscape: true, printBackground: true, preferCSSPageSize: true });
+    const { canceled, filePath } = await dialog.showSaveDialog(parent, {
+      title: 'Uložit kontakty do PDF',
+      defaultPath: path.join(app.getPath('desktop'), `brembo-f1-kontakty-${new Date().toISOString().slice(0, 10)}.pdf`),
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
+    if (canceled || !filePath) return { canceled: true };
+    fs.writeFileSync(filePath, pdf);
+    const viewer = new BrowserWindow({
+      parent, width: 1200, height: 800, autoHideMenuBar: true, backgroundColor: '#ffffff',
+      title: 'Kontakty – PDF', webPreferences: { plugins: true },
+    });
+    viewer.setMenuBarVisibility(false);
+    viewer.maximize();
+    viewer.loadFile(filePath).catch(() => {});
+    return { path: filePath };
+  } catch (e) {
+    console.error('Export PDF selhal:', e);
+    return { error: String((e && e.message) || e) };
+  } finally {
+    work.destroy();
+    fs.rm(tmp, { force: true }, () => {});
+  }
+});
+
 // plynulejší animace a přesnější měření: bez omezování obnovovací frekvence
 app.commandLine.appendSwitch('disable-frame-rate-limit');
 app.commandLine.appendSwitch('disable-pinch');
@@ -47,7 +82,7 @@ function createWindow() {
     height: 720,
     kiosk: true,              // celá obrazovka bez rámu, nejde minimalizovat běžným způsobem
     autoHideMenuBar: true,
-    backgroundColor: '#03113a',
+    backgroundColor: '#0f0f13',
     title: 'Test reakce – překonej pilota Formule 1',
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {

@@ -4,4 +4,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('boardStore', {
   load: () => ipcRenderer.sendSync('board:load'),
   save: (board) => ipcRenderer.sendSync('board:save', board),
+  exportPdf: (html) => ipcRenderer.invoke('contacts:pdf', html),
 });
