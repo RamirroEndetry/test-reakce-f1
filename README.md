@@ -68,7 +68,7 @@ Po 60 s nečinnosti se aplikace vrátí na úvodní spořič.
 
 Na úvodní obrazovce běží smyčka pěti záběrů `assets/video/f1-1.mp4` až `f1-5.mp4`
 (1920×1080, bez zvuku, každý 5 s). Texty, startovní semafor, výzva ke hře a logo
-`assets/Brembo_logo.png` se vykreslují přes video v aplikaci – každý klip má vlastní
+`assets/brembo-logo.png` se vykreslují přes video v aplikaci – každý klip má vlastní
 scénu (`.scene` v `index.html`, ve stejném pořadí jako klipy). Záběr vyměníte přepsáním
 souboru se stejným názvem. Když videa chybí, spořič běží s texty na běžném pozadí.
 

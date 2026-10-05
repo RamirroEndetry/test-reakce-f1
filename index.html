@@ -13,7 +13,7 @@
     --dark-900:#0f0f13;
     --dark-700:#1d1d24;
     --dark-500:#3a3a46;
-    --accent:#d5001c;
+    --accent:#e43038;
     --accent-light:#ff4d5e;
     --white:#ffffff;
     --red:#e10600;
@@ -45,7 +45,7 @@
     background:linear-gradient(90deg,transparent,var(--accent-light),transparent);opacity:.8;animation:streak linear infinite}
   @keyframes streak{from{transform:translateX(0)}to{transform:translateX(160vw)}}
   .bg .glow{position:absolute;left:50%;top:50%;width:80vmax;height:80vmax;transform:translate(-50%,-50%);
-    background:radial-gradient(circle,rgba(213,0,28,.22) 0%,rgba(213,0,28,0) 60%);animation:breathe 4s ease-in-out infinite}
+    background:radial-gradient(circle,rgba(228,48,56,.22) 0%,rgba(228,48,56,0) 60%);animation:breathe 4s ease-in-out infinite}
   @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(.9);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
   .bg .checker{position:absolute;left:0;right:0;height:40px;opacity:.55;
     background:repeating-conic-gradient(#fff 0 25%,#000 0 50%) 0 0/40px 40px;
@@ -100,7 +100,7 @@
   .a-bottom{padding-bottom:5vh}
   #attract .cta{display:inline-flex;align-items:center;padding:.55em 1.5em;border-radius:999px;
     font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:clamp(20px,3.2vw,44px);
-    background:linear-gradient(180deg,#ff3d4f,var(--accent));box-shadow:0 12px 40px rgba(213,0,28,.55),inset 0 1px 0 rgba(255,255,255,.45);
+    background:linear-gradient(180deg,#ff3d4f,var(--accent));box-shadow:0 12px 40px rgba(228,48,56,.55),inset 0 1px 0 rgba(255,255,255,.45);
     animation:pulse 1.4s ease-in-out infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
   #attract .cta .ring{display:inline-block;width:.8em;height:.8em;border:3px solid #fff;border-radius:50%;margin-right:.55em;
@@ -110,10 +110,10 @@
   /* ---------- buttons ---------- */
   .btn{display:inline-block;margin-top:5vh;padding:clamp(16px,2vw,24px) clamp(40px,6vw,80px);border-radius:999px;
     font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:clamp(22px,3vw,38px);
-    background:linear-gradient(180deg,#ff3d4f,var(--accent));color:#fff;box-shadow:0 12px 30px rgba(213,0,28,.45),inset 0 1px 0 rgba(255,255,255,.4);
+    background:linear-gradient(180deg,#ff3d4f,var(--accent));color:#fff;box-shadow:0 12px 30px rgba(228,48,56,.45),inset 0 1px 0 rgba(255,255,255,.4);
     transition:transform .12s,box-shadow .12s,opacity .25s}
   .btn:disabled{opacity:.3;cursor:default;pointer-events:none}
-  .btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(213,0,28,.55),inset 0 1px 0 rgba(255,255,255,.4)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(228,48,56,.55),inset 0 1px 0 rgba(255,255,255,.4)}
   .btn:active{transform:translateY(1px) scale(.98)}
   .btn.secondary{background:rgba(255,255,255,.12);box-shadow:none;border:2px solid rgba(255,255,255,.4)}
   .btn.red{background:#2a0808;border:2px solid #ff3b35;color:#ff8a86;box-shadow:none}
@@ -148,7 +148,7 @@
   .dots{display:flex;gap:14px;justify-content:center;margin-top:3vh}
   .dots span{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.3)}
   .dots span.done{background:#fff}
-  .dots span.now{background:var(--accent-light);box-shadow:0 0 0 4px rgba(213,0,28,.35)}
+  .dots span.now{background:var(--accent-light);box-shadow:0 0 0 4px rgba(228,48,56,.35)}
 
   /* ---------- výherní stránka ---------- */
   #results{padding-top:3vh;padding-bottom:3vh}
@@ -159,7 +159,7 @@
   .stat .label{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:clamp(13px,1.5vw,20px);opacity:.8}
   .stat .value{font-family:var(--font-display);font-weight:900;font-size:clamp(48px,min(9vw,13vh),140px);line-height:1;font-variant-numeric:tabular-nums}
   .stat .value small{font-size:.32em;font-weight:700;margin-left:.1em}
-  .stat.you .value{color:var(--accent-light);text-shadow:0 0 30px rgba(213,0,28,.5)}
+  .stat.you .value{color:var(--accent-light);text-shadow:0 0 30px rgba(228,48,56,.5)}
   .stat .meta{font-size:clamp(13px,1.4vw,18px);opacity:.75;margin-top:.4em}
   .verdict{margin-top:1.5vh;font-family:var(--font-display);font-weight:900;text-transform:uppercase;font-size:clamp(20px,min(3.6vw,5vh),48px);line-height:1.05}
   .verdict.win{color:var(--gold);text-shadow:0 0 30px rgba(255,204,51,.55)}
@@ -182,7 +182,7 @@
   .form label small{text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;font-family:var(--font-body)}
   .field{display:block;width:100%;margin-top:.3em;font-family:var(--font-body);font-size:clamp(17px,min(2.1vw,3vh),26px);padding:.5em .8em;border-radius:14px;
     border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.3);color:#fff;outline:none;-webkit-user-select:text;user-select:text}
-  .field:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(213,0,28,.3)}
+  .field:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(228,48,56,.3)}
   .field::placeholder{color:rgba(255,255,255,.45)}
   .consent{margin-top:1vh;font-size:clamp(11px,1.2vw,15px);opacity:.7}
   .err{margin-top:.8em;color:#ff8a86;font-weight:600}
@@ -235,7 +235,7 @@
   .board-win li .rank{font-family:var(--font-display);font-weight:900;font-size:1.25em;opacity:.8}
   .board-win li .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .board-win li .time{font-family:var(--font-display);font-weight:800;font-size:1.15em;color:var(--accent-light)}
-  .board-win li.me{background:rgba(213,0,28,.28);outline:2px solid var(--accent)}
+  .board-win li.me{background:rgba(228,48,56,.28);outline:2px solid var(--accent)}
   .board-win li.r1 .rank{color:var(--gold)}.board-win li.r2 .rank{color:#d9d9d9}.board-win li.r3 .rank{color:#d09150}
   .board-win li.empty{display:block;opacity:.6;text-align:center;background:none}
   .board-win li.pilot-row{background:rgba(255,255,255,.16);outline:2px solid rgba(255,255,255,.4)}
@@ -301,7 +301,7 @@
     <video muted playsinline preload="auto"></video>
     <video muted playsinline preload="auto"></video>
   </div>
-  <div class="a-top"><img class="a-logo" src="assets/Brembo_logo.png" alt="Brembo"></div>
+  <div class="a-top"><img class="a-logo" src="assets/brembo-logo.png" alt="Brembo"></div>
   <div class="a-stage">
     <div class="scene">
       <div class="lights" id="attractLights">
@@ -714,7 +714,7 @@
     ['#nameInput','#phoneInput','#emailInput','#noteInput'].forEach(s=>{ $(s).value=''; });
     $('#signErr').hidden=true;
     // konfety v barvách aplikace
-    const colors=['#d5001c','#ff4d5e','#ffffff','#ffcc33','#3a3a46'];
+    const colors=['#e43038','#ff4d5e','#ffffff','#ffcc33','#3a3a46'];
     confetti.innerHTML=Array.from({length:44},(_,i)=>
       `<i style="left:${Math.random()*100}%;background:${colors[i%colors.length]};animation-duration:${3+Math.random()*3}s;animation-delay:${-Math.random()*6}s;transform:rotate(${Math.random()*360}deg)"></i>`).join('');
     show('results');
