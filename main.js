@@ -1,5 +1,5 @@
 // Electron obal pro Test reakce – kiosk režim (celá obrazovka, bez menu)
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, powerSaveBlocker } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -75,6 +75,12 @@ ipcMain.handle('contacts:pdf', async (event, html) => {
 // plynulejší animace a přesnější měření: bez omezování obnovovací frekvence
 app.commandLine.appendSwitch('disable-frame-rate-limit');
 app.commandLine.appendSwitch('disable-pinch');
+// Kiosk nesmí „usnout“: když Windows označí okno za zakryté (dialog, okno s PDF, zhasnutý displej, zámek
+// obrazovky), Chromium jinak zpomalí časovače stránky až na jedno tiknutí za minutu – tlačítka s krátkým
+// zámkem (Rozumím, Pokračovat) by zůstala neaktivní a červená by nepřecházela na zelenou.
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -90,6 +96,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: false,
+      backgroundThrottling: false,   // časovače a animace běží naplno, i když okno „není vidět“
     },
   });
 
@@ -104,6 +111,9 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  powerSaveBlocker.start('prevent-display-sleep');   // na akci nesmí displej zhasnout
+  createWindow();
+});
 
 app.on('window-all-closed', () => app.quit());

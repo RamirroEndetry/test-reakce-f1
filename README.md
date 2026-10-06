@@ -36,13 +36,15 @@ byl jednou vylosován, do dalšího losování nejde. **Smazat vše** maže i v�
   jen 2 omyly (`MAX_EARLY`). Třetí pokus ukončí bez výsledku.
 - **Tipnutý klik**: reakce pod 100 ms se počítá jako předčasný start (`MIN_REACTION_MS`).
 - **Tlačítka** (Rozumím, Pokračovat, tlačítka na výherní stránce) jsou po zobrazení 0,7 s
-  neaktivní (`BTN_LOCK_MS`), aby je neodklikl rozjetý prst.
+  neaktivní (`BTN_LOCK_MS`), aby je neodklikl rozjetý prst. Zámek odemyká uplynulý čas, ne jen
+  časovač – i když prohlížeč časovače zpomalí, první klepnutí po 0,7 s projde.
 
 ## Spuštění
 
 - **Web**: otevřete `index.html` v prohlížeči (Chrome/Edge), nebo použijte GitHub Pages.
 - **Windows aplikace (Electron)**: spusťte `TestReakceF1-portable.exe` (bez instalace)
-  nebo `TestReakceF1-instalace.exe` (vytvoří zástupce na ploše).
+  nebo `TestReakceF1-instalace.exe` (vytvoří zástupce na ploše). Aplikace brání zhasnutí displeje
+  a zpomalování časovačů, když Windows považují okno za zakryté (dialog, okno s PDF).
 
 ## Obsluha na akci
 

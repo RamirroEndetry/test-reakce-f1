@@ -113,6 +113,8 @@
     background:linear-gradient(180deg,#ff3d4f,var(--accent));color:#fff;box-shadow:0 12px 30px rgba(228,48,56,.45),inset 0 1px 0 rgba(255,255,255,.4);
     transition:transform .12s,box-shadow .12s,opacity .25s}
   .btn:disabled{opacity:.3;cursor:default;pointer-events:none}
+  .btn.locked{opacity:.3;cursor:default}
+  .btn.locked:hover{transform:none}
   .btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(228,48,56,.55),inset 0 1px 0 rgba(255,255,255,.4)}
   .btn:active{transform:translateY(1px) scale(.98)}
   .btn.secondary{background:rgba(255,255,255,.12);box-shadow:none;border:2px solid rgba(255,255,255,.4)}
@@ -345,7 +347,7 @@
       <div class="step"><div class="n">2</div><p><span class="swatch" style="background:var(--green)"></span>Zelená = KLEPNI! Měříme reakci v milisekundách.</p></div>
       <div class="step"><div class="n">3</div><p>Máš <b>jeden pokus</b>: 3 kola hned za sebou. Počítá se <b>průměr</b> všech tří.</p></div>
     </div>
-    <button class="btn" id="startBtn" disabled>Rozumím</button>
+    <button class="btn" id="startBtn">Rozumím</button>
   </div>
 </section>
 
@@ -499,8 +501,19 @@
   // telefon pro porovnání: jen číslice, bez předvolby 00420 / +420 („+420 777 123 456“ = „777123456“)
   const phoneKey = p => { const d=String(p||'').replace(/\D/g,'').replace(/^00/,''); return d.length>9&&d.startsWith('420') ? d.slice(3) : d; };
   const when = d => { const t=new Date(d); return isNaN(t) ? '' : t.toLocaleString('cs-CZ',{dateStyle:'short',timeStyle:'short'}); };
-  // po zobrazení tlačítko chvíli zamkne, aby ho neodklikl rozjetý prst
-  function lockBriefly(btn){ btn.disabled=true; setTimeout(()=>{ btn.disabled=false; },BTN_LOCK_MS); }
+  // po zobrazení tlačítko chvíli zamkne, aby ho neodklikl rozjetý prst. Zámek odemyká uplynulý čas, ne jen časovač:
+  // když prohlížeč časovače zpomalí (okno považuje za zakryté nebo na pozadí, časovač pak tikne třeba jen jednou
+  // za minutu), tlačítko by jinak zůstalo trvale neaktivní – takhle první klepnutí po uplynutí zámku projde
+  function lockBriefly(btn,onUnlock){
+    btn.classList.add('locked'); btn.dataset.unlockAt=performance.now()+BTN_LOCK_MS;
+    setTimeout(()=>{ if(unlockIfDue(btn)&&onUnlock) onUnlock(); },BTN_LOCK_MS);
+  }
+  function unlockIfDue(btn){
+    if(!btn.classList.contains('locked')||performance.now()<+btn.dataset.unlockAt-20) return false;
+    btn.classList.remove('locked'); delete btn.dataset.unlockAt; return true;
+  }
+  const isLocked = btn => { unlockIfDue(btn); return btn.classList.contains('locked'); };
+  const unlockDueAll = () => document.querySelectorAll('.btn.locked').forEach(unlockIfDue);
 
   // ---------- pozadí: světelné čáry ----------
   for(let i=0;i<9;i++){
@@ -576,6 +589,7 @@
     idleTimer=setTimeout(()=>{ if(!(current==='test'&&(waiting||armed))) goAttract(); else resetIdle(); },IDLE_MS);
   }
   ['pointerdown','keydown','pointermove'].forEach(ev=>document.addEventListener(ev,()=>{ if(current!=='attract') resetIdle(); },{passive:true}));
+  ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,unlockDueAll,{capture:true,passive:true}));
 
   function goAttract(){
     abortTest();
@@ -599,7 +613,7 @@
 
   // ---------- test: jeden pokus o ROUNDS kolech ----------
   const testEl=screens.test, testContent=$('#testContent'), testActions=$('#testActions'), roundLabel=$('#roundLabel');
-  let times=[], earlyCount=0, armed=false, waiting=false, goAt=0, waitTimer=null, rafId=null, lockTimer=null;
+  let times=[], earlyCount=0, armed=false, waiting=false, goAt=0, waitTimer=null, rafId=null;
   const avgOf = arr => Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
 
   function dotsHTML(){
@@ -609,14 +623,13 @@
 
   // tlačítko u spodního okraje; odemkne se až po chvíli, aby ho neodklikly rychlé kliky za sebou
   function showAction(label,cls,onClick){
-    testActions.innerHTML=`<button class="btn ${cls}" disabled>${label}</button>`;
+    testActions.innerHTML=`<button class="btn ${cls}">${label}</button>`;
     const btn=testActions.firstChild;
-    btn.addEventListener('click',onClick);
-    clearTimeout(lockTimer);
-    lockTimer=setTimeout(()=>{ btn.disabled=false; if(!modalOpen) btn.focus(); },BTN_LOCK_MS);
+    btn.addEventListener('click',()=>{ if(!isLocked(btn)) onClick(); });
+    lockBriefly(btn,()=>{ if(!modalOpen) btn.focus(); });
   }
 
-  startBtn.addEventListener('click',()=>{ times=[]; earlyCount=0; startRound(); });
+  startBtn.addEventListener('click',()=>{ if(isLocked(startBtn)) return; times=[]; earlyCount=0; startRound(); });
 
   function startRound(){
     show('test');
@@ -721,10 +734,11 @@
     lockBriefly(toSignBtn); lockBriefly(againBtn);
   }
   toSignBtn.addEventListener('click',()=>{
+    if(isLocked(toSignBtn)) return;
     $('#signHead').textContent=`${finalMs} ms`;
     show('signup');
   });
-  againBtn.addEventListener('click',goAttract);
+  againBtn.addEventListener('click',()=>{ if(!isLocked(againBtn)) goAttract(); });
 
   // ---------- žebříček: úložiště ----------
   // v Electronu soubor na disku (zapisuje se okamžitě, přežije výpadek proudu),
