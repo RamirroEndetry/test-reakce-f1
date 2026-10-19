@@ -131,6 +131,10 @@
   /* ---------- test screen ---------- */
   /* červená a zelená zůstávají – jsou to signály startovního semaforu */
   #test{background:var(--dark-700);transition:background .05s;z-index:5}
+  #test .game-logo{position:absolute;bottom:3vh;left:50%;transform:translateX(-50%);width:clamp(140px,22vw,300px);height:auto;filter:brightness(0) invert(1);pointer-events:none}
+  #test:not(.wait):not(.go) .game-logo{display:none}
+  .game-settings{display:flex;flex-wrap:wrap;gap:20px;margin:18px 0;padding:14px;border:1px solid #555;border-radius:12px}
+  .game-settings input{width:24px;height:24px;vertical-align:middle}
   #test.wait{background:var(--red)}
   #test.go{background:var(--green)}
   #test.early{background:#4a0a0a}
@@ -353,6 +357,7 @@
 
 <!-- ============ 3) TEST ============ -->
 <section class="screen" id="test">
+  <img class="game-logo" src="assets/brembo-game-logo.png" alt="Brembo" draggable="false">
   <div class="round" id="roundLabel"></div>
   <div class="content" id="testContent"></div>
   <div class="test-actions" id="testActions"></div>
@@ -439,6 +444,12 @@
   </div>
   <div class="modal-box wide" id="admPanel" hidden>
     <h3>Hráči a kontakty</h3>
+    <fieldset class="game-settings"><legend>Možnosti zápisu hráčů</legend>
+      <label><input type="checkbox" id="settingPhone"> Telefon</label>
+      <label><input type="checkbox" id="settingEmail"> E-mail</label>
+      <label><input type="checkbox" id="settingNote"> Poznámka</label>
+      <small>Pro zápis pouze jména vypněte všechny tři možnosti. Losování vyžaduje telefon.</small>
+    </fieldset>
     <p id="admInfo"></p>
     <div class="adm-list" id="admList"></div>
     <div class="modal-actions">
@@ -736,6 +747,7 @@
   toSignBtn.addEventListener('click',()=>{
     if(isLocked(toSignBtn)) return;
     $('#signHead').textContent=`${finalMs} ms`;
+    applyGameSettings();
     show('signup');
   });
   againBtn.addEventListener('click',()=>{ if(!isLocked(againBtn)) goAttract(); });
@@ -750,6 +762,7 @@
     if(fileStore){
       try{
         const b=fileStore.load();
+        if(b&&b.error){ if(!loadBoard.warned){ alert(b.error); loadBoard.warned=true; } return memBoard.slice(); }
         if(Array.isArray(b)){ memBoard=b; return memBoard.slice(); }
         // první spuštění s novou verzí: převezmi výsledky uložené dříve v localStorage
         const old=JSON.parse(localStorage.getItem(BOARD_KEY));
@@ -761,9 +774,45 @@
     return memBoard.slice();
   }
   function saveBoard(b){
+    let ok=false;
+    try {
+      if(fileStore) ok=fileStore.save(b)===true;
+      else { localStorage.setItem(BOARD_KEY,JSON.stringify(b)); ok=true; }
+    } catch(e){}
+    if(!ok){ alert('Uložení na disk selhalo. Záznam není potvrzený. Zkontrolujte volné místo a oprávnění k zápisu a zkuste to znovu.'); return false; }
     memBoard=b.slice();
-    if(fileStore){ try{ fileStore.save(b); }catch(e){} }
-    try{ localStorage.setItem(BOARD_KEY,JSON.stringify(b)); }catch(e){}
+    if(fileStore) try{ localStorage.setItem(BOARD_KEY,JSON.stringify(b)); }catch(e){}
+    return true;
+  }
+  let gameSettings={phone:true,email:true,note:true};
+  try {
+    const saved=fileStore ? fileStore.loadSettings() : JSON.parse(localStorage.getItem('f1-game-settings'));
+    if(saved && !saved.error) for(const key of Object.keys(gameSettings)) if(typeof saved[key]==='boolean') gameSettings[key]=saved[key];
+  } catch(e){}
+  function applyGameSettings(){
+    const fields=[nameInput,phoneInput,emailInput,noteInput];
+    [phoneInput,emailInput,noteInput].forEach((el,i)=>{
+      const enabled=gameSettings[['phone','email','note'][i]];
+      el.closest('label').hidden=!enabled; el.disabled=!enabled;
+      if(!enabled) el.value='';
+    });
+    const visible=fields.filter(el=>!el.disabled);
+    visible.forEach((el,i)=>el.dataset.enter=i===visible.length-1?'Uložit':'Další');
+    const consent=$('#signup .consent');
+    consent.hidden=!gameSettings.phone&&!gameSettings.email;
+    consent.textContent=(gameSettings.phone?'Telefon je tvůj lístek do losování o hlavní výhru – každé číslo jen jednou. ':'')+'Vyplněním kontaktu souhlasíš s tím, že se ti Brembo může ozvat.';
+  }
+  for(const key of ['phone','email','note']){
+    const el=$('#setting'+key[0].toUpperCase()+key.slice(1));
+    el.checked=gameSettings[key];
+    el.addEventListener('change',()=>{
+      const next={...gameSettings,[key]:el.checked};
+      try {
+        if(fileStore){ if(fileStore.saveSettings(next)!==true) throw new Error(); }
+        else localStorage.setItem('f1-game-settings',JSON.stringify(next));
+        gameSettings=next; applyGameSettings();
+      }catch(e){ el.checked=gameSettings[key]; alert('Nastavení se nepodařilo uložit.'); }
+    });
   }
 
   // ---------- žebříček: panel z boku ----------
@@ -801,16 +850,16 @@
   const nameInput=$('#nameInput'), phoneInput=$('#phoneInput'), emailInput=$('#emailInput'), noteInput=$('#noteInput'), signErr=$('#signErr');
   function signFail(msg,el){ signErr.textContent=msg; signErr.hidden=false; el.focus(); }
   function sign(){
-    const name=nameInput.value.trim(), phone=phoneInput.value.trim().replace(/\s+/g,' '), email=emailInput.value.trim(), note=noteInput.value.trim();
+    const name=nameInput.value.trim(), phone=gameSettings.phone?phoneInput.value.trim().replace(/\s+/g,' '):'', email=gameSettings.email?emailInput.value.trim():'', note=gameSettings.note?noteInput.value.trim():'';
     if(!name) return signFail('Napiš své jméno nebo přezdívku.',nameInput);
-    if(PHONE_REQUIRED&&!phone) return signFail('Napiš své telefonní číslo.',phoneInput);
+    if(gameSettings.phone&&PHONE_REQUIRED&&!phone) return signFail('Napiš své telefonní číslo.',phoneInput);
     if(phone&&phone.replace(/\D/g,'').length<9) return signFail('Telefon nevypadá správně – zkontroluj ho'+(PHONE_REQUIRED?'.':', nebo ho nech prázdný.'),phoneInput);
     if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return signFail('E-mail nevypadá správně – zkontroluj ho, nebo ho nech prázdný.',emailInput);
     if(phone&&loadBoard().some(e=>e.phone&&phoneKey(e.phone)===phoneKey(phone)))
       return signFail('Tohle číslo už svůj lístek má – každé telefonní číslo může do losování jen jednou.',phoneInput);
     const entry={id:Date.now()+Math.random().toString(16).slice(2),name,ms:finalMs,date:new Date().toISOString(),
       phone,email,note,rounds:times.slice()};
-    const board=loadBoard(); board.push(entry); saveBoard(board);
+    const board=loadBoard(); board.push(entry); if(!saveBoard(board)) return;
     myEntryId=entry.id;
     const rank=board.sort((a,b)=>a.ms-b.ms).findIndex(e=>e.id===entry.id)+1;
     const s=$('#signed'); s.hidden=false;
@@ -822,8 +871,16 @@
   $('#signBtn').addEventListener('click',sign);
   $('#signBack').addEventListener('click',()=>show('results'));
   // Enter (i tlačítko na klávesnici na obrazovce) přeskakuje mezi poli, v posledním ukládá
-  [[nameInput,()=>phoneInput.focus()],[phoneInput,()=>emailInput.focus()],[emailInput,()=>noteInput.focus()],[noteInput,sign]].forEach(([el,next])=>{
-    el.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') next(); });
+  [nameInput,phoneInput,emailInput,noteInput].forEach(el=>{
+    el.addEventListener('keydown',e=>{
+      e.stopPropagation();
+      if(e.key==='Enter'){
+        e.preventDefault();
+        const fields=[nameInput,phoneInput,emailInput,noteInput].filter(f=>!f.disabled);
+        const next=fields[fields.indexOf(el)+1];
+        if(next) next.focus(); else sign();
+      }
+    });
     el.addEventListener('input',()=>{ signErr.hidden=true; });
   });
   // do telefonu jdou jen číslice, + a mezera (i z připojené klávesnice)
@@ -951,7 +1008,7 @@
     const b=loadBoard(), en=b.find(x=>String(x.id)===id);
     if(!en) return;
     en.note=e.target.value;
-    memBoard=b; noteTimer=setTimeout(()=>{ noteTimer=null; saveBoard(memBoard); },400);
+    saveBoard(b);
   });
   // export pro Excel: středník, UTF-8 s BOM
   $('#admExport').addEventListener('click',()=>{
@@ -1039,7 +1096,7 @@
       if(n<DRAW_STEPS){ drawName.textContent=pool[randInt(pool.length)].name; n++; setTimeout(tick,60+n*n*.45); return; }
       b.forEach(e=>{ delete e.winner; });
       win.winner=new Date().toISOString(); win.drawn=true;
-      saveBoard(b);
+      if(!saveBoard(b)){ drawGo.disabled=false; drawBack.disabled=false; return; }
       renderDraw();
     })();
   }
@@ -1067,7 +1124,7 @@
       return;
     }
     clearTimeout(wipeArmed); wipeArmed=null; clearTimeout(noteTimer); noteTimer=null;
-    saveBoard([]); myEntryId=null;
+    if(!saveBoard([])) return; myEntryId=null;
     closeAdmin();
     goAttract();
   });

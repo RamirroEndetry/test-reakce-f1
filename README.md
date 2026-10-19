@@ -58,11 +58,11 @@ byl jednou vylosován, do dalšího losování nejde. **Smazat vše** maže i v�
 
 Heslo správce je v souboru `config.local.js` (`adminPassword`).
 
-Žebříček se ukládá na daném zařízení, každé zařízení má vlastní. Výsledky zůstávají
-i po vypnutí, restartu nebo výpadku proudu – smazat je jde jen resetem s heslem.
+Žebříček se ukládá na daném zařízení, každé zařízení má vlastní. Potvrzené zápisy se ihned ukládají na disk; při chybě aplikace zobrazí upozornění.
+Zápis a zálohy zvyšují odolnost vůči výpadku, nemohou zaručit ochranu při poruše disku.
 
 - **Electron**: soubor `%APPDATA%\Test reakce F1\zebricek.json` (zapisuje se okamžitě
-  s `fsync`, vedle je záloha `zebricek.json.bak`).
+  s `fsync`, vedle je aktuální záloha `zebricek.json.bak` a předchozí stav `.previous`; při poškození se zkouší i `.tmp`).
 - **Web**: localStorage prohlížeče (nemazat data prohlížeče / nepoužívat anonymní okno).
 Po 60 s nečinnosti se aplikace vrátí na úvodní spořič.
 
@@ -82,3 +82,18 @@ npm run build
 ```
 
 Výstup najdete ve složce `dist/`.
+
+## Možnosti zápisu (od verze 1.5.2)
+
+Ve správě lze samostatně zapnout nebo vypnout telefon, e-mail a poznámku pro nové hráče.
+Vypnutím všech tří polí se zapisuje jen jméno a výsledek. Nastavení přetrvá restart
+(Electron: `settings.json` ve stejné datové složce jako žebříček). Dosavadní kontakty zůstávají zachované.
+Losování používá pouze hráče s telefonem. Logo z `assets/brembo-game-logo.png` se zobrazuje
+bíle na červené a zelené obrazovce hry.
+
+Pokud kontakty chybí, nejprve uchovejte soubory `zebricek.json*` z datové složky počítače,
+na kterém se hrálo. Ověřte také původní účet Windows a zda se hrálo v Electronu nebo prohlížeči;
+každý má vlastní úložiště. Nepoužívejte „Smazat vše“. Poškozené soubory aplikace nepřepíše.
+
+Ověření: `node --test storage.test.js`; `npx electron smoke-test.cjs` ověřuje formulář
+s testovacími daty pouze v paměti, bez zásahu do kontaktů.

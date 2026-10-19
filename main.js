@@ -9,33 +9,19 @@ const fs = require('fs');
 // Smazat je jde jen resetem s heslem v aplikaci.
 const boardFile = () => path.join(app.getPath('userData'), 'zebricek.json');
 
-function readJson(file) {
-  try { const b = JSON.parse(fs.readFileSync(file, 'utf8')); return Array.isArray(b) ? b : null; }
-  catch (e) { return null; }
+const storage = require('./storage');
+for (const kind of ['board', 'settings']) {
+  const file = () => kind === 'board' ? boardFile() : path.join(app.getPath('userData'), 'settings.json');
+  const valid = kind === 'board' ? Array.isArray : v => v && typeof v === 'object' && !Array.isArray(v);
+  ipcMain.on(`${kind}:load`, event => {
+    try { event.returnValue = storage.load(file(), valid); }
+    catch (e) { event.returnValue = { error: e.message }; }
+  });
+  ipcMain.on(`${kind}:save`, (event, value) => {
+    try { event.returnValue = storage.save(file(), value, valid); }
+    catch (e) { console.error('Uložení selhalo:', e); event.returnValue = false; }
+  });
 }
-
-ipcMain.on('board:load', (event) => {
-  // při poškození hlavního souboru použij zálohu předchozí verze
-  event.returnValue = readJson(boardFile()) ?? readJson(boardFile() + '.bak');
-});
-
-ipcMain.on('board:save', (event, board) => {
-  try {
-    const file = boardFile();
-    const tmp = file + '.tmp';
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    const fd = fs.openSync(tmp, 'w');
-    fs.writeSync(fd, JSON.stringify(Array.isArray(board) ? board : [], null, 1));
-    fs.fsyncSync(fd);
-    fs.closeSync(fd);
-    if (fs.existsSync(file)) fs.copyFileSync(file, file + '.bak');
-    fs.renameSync(tmp, file);
-    event.returnValue = true;
-  } catch (e) {
-    console.error('Uložení žebříčku selhalo:', e);
-    event.returnValue = false;
-  }
-});
 
 // ---------- export kontaktů do PDF ----------
 // Stránka pošle hotovou HTML tabulku; ta se ve skrytém okně vytiskne do PDF (A4 na šířku),
@@ -110,6 +96,8 @@ function createWindow() {
     if (input.key === 'F11') { event.preventDefault(); win.setKiosk(!win.isKiosk()); }
   });
 }
+
+if (!app.requestSingleInstanceLock()) app.quit();
 
 app.whenReady().then(() => {
   powerSaveBlocker.start('prevent-display-sleep');   // na akci nesmí displej zhasnout
